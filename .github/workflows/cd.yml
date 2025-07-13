@@ -1,0 +1,29 @@
+name: Deploy Next.js
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts
+            cd ~/portfolio
+            git pull
+            pnpm install
+            pnpm run build
+            pm2 del portfolio
+            pm2 start 'pnpm run start' --name portfolio
+          ssh_args: '-o StrictHostKeyChecking=no'
